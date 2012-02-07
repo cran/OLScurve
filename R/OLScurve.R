@@ -45,9 +45,11 @@
 #' @seealso \code{\link{parplot}}, \code{\link{subjplot}}
 #' @references 
 #'
-#' Bollen, K. A. & Curran, P. J. (2006). \emph{Latent Curve Models: A Structural Equation Perspective}. John Wiley & Sons.
+#' Bollen, K. A. & Curran, P. J. (2006). \emph{Latent Curve Models: 
+#'    A Structural Equation Perspective}. John Wiley & Sons.
 #'
-#' Carrig, M. M., Wirth, R. J., & Curran, P. J. (2004). A SAS Macro for Estimating and Visualizing Individual Growth Curves. \emph{Structural Equation Modeling, 11}, 132-149.
+#' Carrig, M. M., Wirth, R. J., & Curran, P. J. (2004). A SAS Macro for Estimating and Visualizing 
+#'    Individual Growth Curves. \emph{Structural Equation Modeling, 11}, 132-149.
 #'
 #'
 #' @examples 
@@ -73,7 +75,7 @@
 #' 
 #' ##exponential
 #' data <- t(t(matrix(rnorm(1000,0,5),200)) + exp(0:4))  
-#' mod4 <- OLScurve(~ sqrt(time), data = data)    
+#' mod4 <- OLScurve(~ exp(time), data = data)    
 #' mod4
 #' plot(mod4)
 #'
@@ -109,16 +111,19 @@ OLScurve <- function(formula, data, time = 0:(ncol(data)-1), ...){
 	y <- data[1,]
 	npars <- length(lm(formula)$coef)	
 	pars <- matrix(0,nrow(data),npars)
-	res <- pred <- data	
+	res <- lower <- upper <- pred <- data	
 	for(i in 1:nrow(data)){
 		y <- as.numeric(data[i,])
 		mod <- lm(formula)
-		pars[i,] <- mod$coef
-		pred[i,] <- predict(mod)
+		pars[i,] <- mod$coef		
+        tmp <- predict(mod,interval="confidence")
+		pred[i,] <- tmp[ ,1]
+		lower[i,] <- tmp[ ,2] 
+		upper[i,] <- tmp[ ,3]
 		res[i, ] <- residuals(mod)
 	}	
-	mod <- list(pars = pars, pred = pred, res=res, data = data.frame(data), orgdata = orgdata, 
-		formula = formula, omitted = nrow(data)/nrow(orgdata), time = time, call = call)
+	mod <- list(pars=pars, pred=pred, lower=lower, upper=upper, res=res, data=data.frame(data), 
+        orgdata=orgdata, formula=formula, omitted=nrow(data)/nrow(orgdata), time=time, call=call)
 	class(mod) <- "OLScurve"
 	mod
 }

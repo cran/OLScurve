@@ -6,8 +6,8 @@
 #' 
 #' @aliases subjplot
 #' @param object an object of class \code{OLScurve}
-#' @param group a \code{factor} grouping variable used to parition the results
 #' @param layout a variable to be passed to \code{xyplot} to adjust the graphical layout
+#' @param prompt a logical variable indicating whether \code{devAskNewPage(ask=TRUE)} should be called
 #' @param ... additional arguments to be passed
 #' @author Phil Chalmers \email{rphilip.chalmers@@gmail.com}
 #' @keywords OLS, growth
@@ -19,6 +19,11 @@
 #' mod <- OLScurve(~ time, data = data)	
 #' subjplot(mod)
 #' 
+#' ##quadratic
+#' data <- t(t(matrix(rnorm(1000),200)) + (0:4)^2)
+#' mod2 <- OLScurve(~ time + I(time^2), data = data)
+#' subjplot(mod2)
+#' 
 #' 
 #' }
 subjplot <- function(object, ...){
@@ -28,8 +33,8 @@ subjplot <- function(object, ...){
 #' @S3method subjplot OLScurve
 #' @rdname subjplot 
 #' @method subjplot OLScurve 
-subjplot.OLScurve <- function(object, group = NULL, layout = NULL, ...)
-{
+subjplot.OLScurve <- function(object, layout = NULL, prompt = TRUE, ...)
+{    
 	data <- object$data
 	N <- nrow(data)
 	fn <- fn1 <- object$formula
@@ -45,9 +50,9 @@ subjplot.OLScurve <- function(object, group = NULL, layout = NULL, ...)
 	
 	if(is.null(layout)) layout <- c(ceiling(log(N)),ceiling(log(N)))
 	
-	plotOLScurve <- function(data, fn, group = NULL, layout = NULL) 
-    {
-		devAskNewPage(ask=TRUE)
+	plotOLScurve <- function(data, fn, group = NULL, layout = NULL, pred)     {
+        
+		if(prompt) devAskNewPage(ask=TRUE)		
 		data <- data.frame(data) 
 		if(is.null(data$id)) data$id.o<-1:nrow(data) 
 			else data$id.o <- data$id 
@@ -64,7 +69,7 @@ subjplot.OLScurve <- function(object, group = NULL, layout = NULL, ...)
 		ys <- colnames(data)[!(colnames(data)=="id")&
 			!(colnames(data)=="group")&
 			!(colnames(data)=="id.o")]        		
-		data2 <- data.frame(data,ypred,lower,upper,colours=colours)
+		data2 <- data.frame(data,ypred,lower,upper,colours=colours)        
 		datalg <- reshape(data2, idvar="id",
 		                  varying = list(ys,yprednames,lowernames,uppernames),
 		                  v.names = c("y","ypred","lower","upper"), 
@@ -77,15 +82,13 @@ subjplot.OLScurve <- function(object, group = NULL, layout = NULL, ...)
 		fn1 <- paste(ch[2],ch[1],ch[3])
 
 		###### PLOT INDIVIDUAL PARTICIPANTS ######		
-		mypanel = function(x, y, subscripts, lower, upper, colours, ...){
+		mypanel = function(x, y, subscripts, lower, upper, colours, pred, ...){
 		    upper <- upper[subscripts]
 		    lower <- lower[subscripts]		    
-		    panel.polygon(c(x,rev(x)),c(upper,rev(lower)), col=gray(.95), border=NA, ...)
+		    panel.polygon(c(x,rev(x)),c(upper,rev(lower)), col=gray(.9), border=NA, ...)
             
-			panel.xyplot(x, y, col = colours[subscripts], ...)
-			fn2 <- as.formula(fn1)
-			fm <- lm(fn2)
-			panel.lines(x,predict(fm))						
+			panel.xyplot(x, y, col = colours[subscripts], ...)            			
+			panel.lines(x, pred[subscripts])						
 		}
         subjectPlots <- xyplot( y ~ time | factor(id), data=datalg, 
                 layout = layout,
@@ -94,9 +97,11 @@ subjplot.OLScurve <- function(object, group = NULL, layout = NULL, ...)
     			main = 'Subject plots',
                 upper = datalg$upper,
     		    lower = datalg$lower,                  
-                colours = datalg$colours,                                
+                colours = datalg$colours, 
+                pred=datalg$ypred,
     			panel = mypanel)                		  
 		print(subjectPlots)        
-	}
-	plotOLScurve(data, fn, group, layout)
+	}	
+	plotOLScurve(data, fn, group=NULL, layout, object$pred)	
+	devAskNewPage(ask=FALSE)
 }

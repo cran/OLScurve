@@ -4,41 +4,48 @@
 \alias{print.OLScurve}
 \title{Ordinary least squares growth curve trajectories}
 \usage{
-  OLScurve(formula, data, time = 0:(ncol(data) - 1), ...)
+  OLScurve(formula, data,
+    time = data.frame(time = 0:(ncol(data) - 1)), ...)
 
   \method{print}{OLScurve} (x, group = NULL, SE = TRUE,
-    digits = 3, ...)
+    adjust = FALSE, digits = 3, ...)
 
   \method{plot}{OLScurve} (x, group = NULL, sep = FALSE,
     ...)
 }
 \arguments{
   \item{formula}{a \code{formula} specifying how the
-  functional form of \code{time} should be coded. The
-  keyword \code{time} must be used, and additive components
-  such as powers, square roots, and exponentials can be
-  included}
+  functional form of \code{time} should be coded. By
+  default \code{time} is the only predictor but can be
+  modified to, and any typical additive R formula may be
+  used (e.g., powers, square roots, and exponentials)}
 
   \item{data}{a data frame in the wide (one subject per
-  row) format containting only the time related variables.
+  row) format containing only the time related variables.
   Can be of class \code{matrix} or \code{data.frame}}
 
-  \item{time}{the relative spacing between time points.
-  Default is equal spacing}
+  \item{time}{a \code{data.frame } object specifying the
+  relative spacing between time points. The default is for
+  equal spacing and this variable is name \code{time}.}
 
   \item{x}{an \code{OLScurve} object}
 
   \item{group}{a \code{factor} grouping variable used to
-  parition the results}
+  partition the results}
 
   \item{SE}{logical; print a list containing the standard
   errors?}
 
   \item{digits}{number of digits to round}
 
-  \item{sep}{logical; should the plots be seperated?}
+  \item{sep}{logical; should the plots be separated?}
 
   \item{...}{additional arguments to be passed}
+
+  \item{adjust}{logical; apply adjustment to make the
+  variances unbiased? Only applicable for simple linear
+  trajectories. Unadjusted valuse can be interpreted as
+  upper bounds of the true variance parameters}
 }
 \description{
   The \code{OLScurve} provides a simple way of specifying
@@ -84,7 +91,8 @@
 ##linear
 data <- t(t(matrix(rnorm(1000),200)) + 1:5)
 mod1 <- OLScurve(~ time, data = data)
-mod1
+mod1 #unadjusted variances
+print(mod1, adjust = TRUE) #adjusted
 plot(mod1)
 
 ##quadratic
@@ -110,6 +118,13 @@ data <- t(t(matrix(rnorm(1000),200)) + 20*sqrt(1:5))
 mod5 <- OLScurve(~ time + sqrt(time), data = data)
 mod5
 plot(mod5)
+
+##piecewise (global linear trend with linear shift at time point 3)
+data <- t(t(matrix(rnorm(1000),200)) + (0:4)^2)
+time <- data.frame(time1 = c(0,1,2,3,4), time2 = c(0,0,0,1,2))
+mod6 <- OLScurve(~ time1 + time2, data, time=time)
+mod6
+plot(mod6)
 
 ##two group analysis with linear trajectories
 data1 <- t(t(matrix(rnorm(500),100)) + 1:5)
@@ -138,6 +153,6 @@ plot(mod,group)
 \seealso{
   \code{\link{parplot}}, \code{\link{subjplot}}
 }
-\keyword{growth}
 \keyword{OLS,}
+\keyword{growth}
 
